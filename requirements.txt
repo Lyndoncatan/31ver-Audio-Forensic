@@ -1,0 +1,13 @@
+numpy
+scipy
+mediapipe
+demucs
+gunicorn
+flask
+librosa
+torch
+torchaudio
+transformers
+torchvggish
+panns_inference
+soundfile
