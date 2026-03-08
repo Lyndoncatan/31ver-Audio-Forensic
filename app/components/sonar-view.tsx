@@ -17,7 +17,7 @@ import ForensicDashboard from "./forensic-dashboard" // New Component
 import SpatialBlueprintView from "./spatial-blueprint-view"
 
 // --- FORENSIC TRACK COMPONENT ---
-function ForensicTrack({ url, label, color, icon: Icon, masterPlaying, masterTime, stats }: any) {
+function ForensicTrack({ url, label, subLabel, color, icon: Icon, masterPlaying, masterTime, stats }: any) {
   const containerRef = useRef<HTMLDivElement>(null)
   const waveSurferRef = useRef<WaveSurfer | null>(null)
   const [isReady, setIsReady] = useState(false)
@@ -77,7 +77,7 @@ function ForensicTrack({ url, label, color, icon: Icon, masterPlaying, masterTim
             <div className="flex items-center gap-2 mt-1">
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: color }} />
               <span className="text-[9px] text-slate-500 font-mono tracking-tighter uppercase">
-                {url ? "Signal_Isolated" : "Waiting..."}
+                {url ? (subLabel || "SIGNAL_ISOLATED") : "Waiting..."}
               </span>
             </div>
             {/* NEW: Stats Display */}
@@ -404,7 +404,44 @@ export default function SonarView({
       const baseColor = config.color;
       const color = isActive ? "#ffffff" : baseColor;
 
-      // Always draw a subtle glow ring around each event
+      // ── Shattered particle scatter around event ──
+      const particleCount = isActive ? 15 : 8;
+      const time = Date.now() / 1000;
+      for (let p = 0; p < particleCount; p++) {
+        const seed1 = ((evIndex * 67 + p * 31) % 97) / 97;
+        const seed2 = ((evIndex * 41 + p * 53) % 89) / 89;
+        const seed3 = ((evIndex * 23 + p * 71) % 83) / 83;
+
+        const pAngle = seed1 * Math.PI * 2;
+        const pDist = 6 + seed2 * (isActive ? 30 : 18);
+        const px = x + Math.cos(pAngle + time * (0.5 + seed3)) * pDist;
+        const py = y + Math.sin(pAngle + time * (0.5 + seed3)) * pDist;
+        const pSize = 1 + seed3 * 2.5;
+        const pAlpha = isActive ? 0.8 - seed2 * 0.4 : 0.3 - seed2 * 0.15;
+
+        ctx.save();
+        ctx.globalAlpha = pAlpha;
+        ctx.fillStyle = baseColor;
+        ctx.translate(px, py);
+        ctx.rotate(time * (1 + seed1 * 2));
+
+        const shapeType = Math.floor(seed3 * 4);
+        if (shapeType === 0) {
+          ctx.beginPath(); ctx.moveTo(0, -pSize); ctx.lineTo(pSize * 0.6, pSize * 0.5);
+          ctx.lineTo(-pSize * 0.6, pSize * 0.5); ctx.closePath(); ctx.fill();
+        } else if (shapeType === 1) {
+          ctx.beginPath(); ctx.moveTo(0, -pSize); ctx.lineTo(pSize * 0.5, 0);
+          ctx.lineTo(0, pSize); ctx.lineTo(-pSize * 0.5, 0); ctx.closePath(); ctx.fill();
+        } else if (shapeType === 2) {
+          ctx.beginPath(); ctx.moveTo(-pSize, 0); ctx.lineTo(pSize, 0);
+          ctx.lineWidth = 1; ctx.strokeStyle = baseColor; ctx.stroke();
+        } else {
+          ctx.beginPath(); ctx.arc(0, 0, pSize * 0.5, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // Glow ring
       ctx.beginPath();
       ctx.arc(x, y, 10, 0, Math.PI * 2);
       ctx.fillStyle = baseColor + "30";
@@ -412,14 +449,14 @@ export default function SonarView({
 
       // Spreading Ripple Effect (when active)
       if (isActive) {
-        const pulse = (Date.now() / 1000) % 1;
+        const pulse = (time) % 1;
         ctx.beginPath();
         ctx.strokeStyle = baseColor;
         ctx.globalAlpha = 1 - pulse;
         ctx.lineWidth = 2;
         ctx.arc(x, y, 5 + (pulse * 30), 0, Math.PI * 2);
         ctx.stroke();
-        const pulse2 = ((Date.now() / 1000) + 0.5) % 1;
+        const pulse2 = (time + 0.5) % 1;
         ctx.globalAlpha = 1 - pulse2;
         ctx.beginPath();
         ctx.arc(x, y, 5 + (pulse2 * 30), 0, Math.PI * 2);
@@ -911,7 +948,7 @@ export default function SonarView({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
-              <ForensicTrack url={audioData?.url} label="Master Mix" color="#ffffff" icon={AudioWaveform} masterPlaying={isPlaying} masterTime={currentTime} stats={getStats(["Master"])} />
+              <ForensicTrack url={audioData?.url} label="Master Mix" subLabel="ORIGINAL SOURCE — FULL MIX" color="#ffffff" icon={AudioWaveform} masterPlaying={isPlaying} masterTime={currentTime} stats={getStats(["Master"])} />
 
               {/* Dynamic Sub-Clip Rendering: each stem can be an array of clips or a string URL */}
               {(() => {
@@ -949,6 +986,7 @@ export default function SonarView({
                           key={`${key}_${idx}`}
                           url={clip.url}
                           label={clipLabel}
+                          subLabel={`${label.toUpperCase()} #${idx + 1} — ISOLATED`}
                           color={color}
                           icon={icon}
                           masterPlaying={isPlaying}
@@ -964,6 +1002,7 @@ export default function SonarView({
                         key={key}
                         url={stemData}
                         label={label}
+                        subLabel={`${label.toUpperCase()} — ISOLATED`}
                         color={color}
                         icon={icon}
                         masterPlaying={isPlaying}
