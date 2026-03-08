@@ -924,8 +924,6 @@ export default function SonarView({
         currentTime={currentTime}
         activeEvents={activeEvents}
         audioRef={audioRef}
-        externalOscilloscopeRef={oscCanvasRef}
-        externalSpectrogramRef={specCanvasRef}
       />
 
       {/* SPATIAL STRUCTURE VIEW — Blueprint/Map + Vertical Propagation */}

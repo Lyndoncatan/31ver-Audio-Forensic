@@ -122,7 +122,7 @@ export default function CaseManagement({ audioData, onLoadCase }: CaseManagement
     const toggleStatus = (id: string) => {
         const updated = cases.map(c => {
             if (c.id !== id) return c
-            const nextStatus = c.status === "open" ? "closed" : c.status === "closed" ? "archived" : "open"
+            const nextStatus = (c.status === "open" ? "closed" : c.status === "closed" ? "archived" : "open") as "open" | "closed" | "archived"
             return { ...c, status: nextStatus, updatedAt: new Date().toISOString() }
         })
         saveAndUpdate(updated)
